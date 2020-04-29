@@ -46,7 +46,7 @@ template.register(id: 'my-id')
 If the registration succeeds, the result will be a M2SYS::BioPlugin::V8::RegisterSuccess instance.
 If it failed because an already-known record matched the biometric template, a M2SYS::BioPlugin::V8::RegisterMatchFoundError error will be raised, containing information. You can catch it like this:
 ```
-try
+begin
   template.register(id: 'my-id')
   puts "Record registered successfully"
 rescue M2SYS::BioPlugin::V8::RegisterMatchFoundError => e
@@ -76,7 +76,7 @@ If it failed to find a match, a M2SYS::BioPlugin::V8::IdentifyNoMatchError error
 
 For instance:
 ```
-try
+begin
   match = template.identify
   puts "The template matched record #{match.match_id} with score #{match.score}%"
 rescue M2SYS::BioPlugin::V8::IdentifyNoMatchError => e
@@ -96,16 +96,13 @@ If it failed to find the record, a M2SYS::BioPlugin::V8::DeleteNotFoundError err
 
 For instance:
 ```
-try
+begin
   M2SYS::BioPlugin::V8::Client.new.delete(id: 'my-id')
   puts "Record deleted successfully"
 rescue M2SYS::BioPlugin::V8::DeleteNotFoundError => e
   puts "Record not found"
 end
 ```
-
-## Contributing
-Contribution directions to be completed.
 
 ## License
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
