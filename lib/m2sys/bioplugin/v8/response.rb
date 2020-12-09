@@ -93,6 +93,23 @@ module M2SYS
         end
       end
 
+
+      # VERIFY
+
+      class VerifySuccess < Success; end
+
+      class VerifyError < Error
+        def message
+          'Verify request error'
+        end
+      end
+
+      class VerifyIdNotExistError < Error
+        def message
+          'Record not found'
+        end
+      end
+
     end
   end
 end

@@ -83,6 +83,29 @@ module M2SYS
           end
         end
 
+        def verify(id:, template:)
+          body = {
+            EngineName: @engine_name,
+            RegistrationID: id,
+            Format: template.as_format,
+            BiometricXml: template.as_biometric_xml
+          }
+          response = api_request(:Verify, body)
+
+          xml = Nokogiri::XML(response)
+          results = xml.css('Results result')
+
+          if results.first
+            if results.first['value'] == 'VS'
+              VerifySuccess.new(body: response)
+            else
+              raise VerifyIdNotExistError.new(body: response)
+            end
+          else
+            raise VerifyError.new(body: response)
+          end
+        end
+
         private
 
         def api_request(action, body)

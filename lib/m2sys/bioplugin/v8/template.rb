@@ -16,6 +16,10 @@ module M2SYS
           Client.new.identify(template: self)
         end
 
+        def verify(id:)
+          Client.new.verify(id: id, template: self)
+        end
+
         def as_format
           raise NotImplementedError
         end
