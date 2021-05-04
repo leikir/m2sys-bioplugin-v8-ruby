@@ -17,7 +17,9 @@ module M2SYS
 
       class << self
         attr_accessor :api_host,
-                      :engine_name
+                      :engine_name,
+                      :client_key,
+                      :client_api_key
 
         def configure
           yield self
