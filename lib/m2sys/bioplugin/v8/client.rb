@@ -96,7 +96,7 @@ module M2SYS
         def get_authorization_token
           url = URI("#{@api_host.gsub('Biometrics', 'Authorizations')}/Token")
           http = Net::HTTP.new(url.host, url.port)
-          http.use_ssl = true
+          # http.use_ssl = true
 
           request = Net::HTTP::Post.new(url)
           request['Content-Type'] = ['application/json']
@@ -118,7 +118,7 @@ module M2SYS
 
           url = URI("#{@api_host}/#{action}")          
           http = Net::HTTP.new(url.host, url.port)
-          http.use_ssl = true
+          # http.use_ssl = true
           request = Net::HTTP::Post.new(url)
           request['Content-Type'] = ['application/json']
           request['Accept'] = 'application/json'
