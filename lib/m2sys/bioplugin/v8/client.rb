@@ -94,7 +94,6 @@ module M2SYS
         private
 
         def get_authorization_token
-          @api_host = 'https://dev-bioplugin.cloudabis.com/api/Biometrics'
           url = URI("#{@api_host.gsub('Biometrics', 'Authorizations')}/Token")
           http = Net::HTTP.new(url.host, url.port)
           http.use_ssl = true
