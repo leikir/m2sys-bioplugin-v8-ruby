@@ -21,6 +21,8 @@ You can do this, for instance, in a Rails initializer:
 M2SYS::BioPlugin::V8.configure do |config|
   config.api_host = 'https://mybioplugininstance.com/api/Biometric'
   config.engine_name = M2SYS::BioPlugin::V8::ENGINE_NAME_FINGERPRINT
+  config.client_key = xxxxx
+  config.client_api_key = yyyyy
 end
 ```
 

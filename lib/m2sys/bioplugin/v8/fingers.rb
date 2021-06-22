@@ -1,9 +1,7 @@
 module M2SYS
   module BioPlugin
     module V8
-
       class Fingers < Template
-
         DATA_TYPE_IMAGE = :IMAGE
         DATA_TYPES = [
           DATA_TYPE_IMAGE
@@ -23,18 +21,17 @@ module M2SYS
           @data_type
         end
 
-        def as_biometric_xml
-          [
-            '<Fingers>',
-            @fingers.map do |finger|
-              "<Finger POS='#{finger.pos}' Format='#{@data_type}'>#{finger.data}</Finger>"
-            end,
-            '</Fingers>'
-          ].join
+        def as_biometric
+          {
+            fingerprint: @fingers.map do |finger|
+              {
+                position: finger.pos,
+                base64Image: finger.data
+              }
+            end
+          }          
         end
-
       end
-
     end
   end
 end

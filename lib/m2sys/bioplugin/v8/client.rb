@@ -1,32 +1,31 @@
 module M2SYS
   module BioPlugin
     module V8
-
       class Client
-
         def initialize(api_host: M2SYS::BioPlugin::V8.api_host,
-                       engine_name: M2SYS::BioPlugin::V8.engine_name)
+                       engine_name: M2SYS::BioPlugin::V8.engine_name,
+                       client_key: M2SYS::BioPlugin::V8.client_key,
+                       client_api_key: M2SYS::BioPlugin::V8.client_api_key)
           @api_host = api_host
           @engine_name = engine_name
+          @client_key = client_key
+          @client_api_key = client_api_key
         end
 
         def register(id:, template:)
           body = {
-            EngineName: @engine_name,
-            RegistrationID: id,
-            Format: template.as_format,
-            BiometricXml: template.as_biometric_xml
+            registrationID: id,
+            clientKey: @client_key,
+            images: template.as_biometric
           }
+
           response = api_request(:Register, body)
 
-          xml = Nokogiri::XML(response)
-          results = xml.css('Results result')
-
-          if results.first
-            if results.first['value'] == 'SUCCESS'
+          if response['OperationStatus'] == 'SUCCESS'
+            if response['OperationResult'] == 'SUCCESS'
               RegisterSuccess.new(body: response)
             else
-              raise RegisterMatchFoundError.new(body: response, match_id: results.first['value'])
+              raise RegisterMatchFoundError.new(body: response, match_id: response['InstanceID'])
             end
           else
             raise RegisterError.new(body: response)
@@ -35,23 +34,17 @@ module M2SYS
 
         def identify(template:)
           body = {
-            EngineName: @engine_name,
-            Format: template.as_format,
-            BiometricXml: template.as_biometric_xml
+            clientKey: @client_key,
+            images: template.as_biometric
           }
           response = api_request(:Identify, body)
 
-          # puts 'Identify response:', response
-
-          xml = Nokogiri::XML(response)
-          results = xml.css('Results result')
-
-          if results.first
-            if results.first['score'].to_i > 0
+          if response['OperationStatus'] == 'SUCCESS'
+            if response['OperationResult'] == 'MATCH_FOUND' && response['BestResult']['Score'].to_i.positive?
               IdentifySuccess.new(
                 body: response,
-                match_id: results.first['value'],
-                score: results.first['score'].to_i
+                match_id: response['BestResult']['ID'],
+                score: response['BestResult']['Score'].to_i
               )
             else
               raise IdentifyNoMatchError.new(body: response)
@@ -63,17 +56,13 @@ module M2SYS
 
         def delete(id:)
           body = {
+            clientKey: @client_key,
             RegistrationID: id
           }
-          response = api_request(:RemoveID, body)
+          response = api_request(:DeleteID, body)
 
-          # puts 'DeleteID response:', response
-
-          xml = Nokogiri::XML(response)
-          results = xml.css('Results result')
-
-          if results.first
-            if results.first['value'] == 'DS'
+          if response['OperationStatus'] == 'SUCCESS'
+            if response['OperationResult'] == 'DS'
               DeleteSuccess.new(body: response)
             else
               raise DeleteNotFoundError.new(body: response)
@@ -85,18 +74,14 @@ module M2SYS
 
         def verify(id:, template:)
           body = {
-            EngineName: @engine_name,
+            clientKey: @client_key,
             RegistrationID: id,
-            Format: template.as_format,
-            BiometricXml: template.as_biometric_xml
+            images: template.as_biometric
           }
           response = api_request(:Verify, body)
-
-          xml = Nokogiri::XML(response)
-          results = xml.css('Results result')
-
-          if results.first
-            if results.first['value'] == 'VS'
+          
+          if response['OperationStatus'] == 'SUCCESS'
+            if response['OperationResult'] == 'VS'
               VerifySuccess.new(body: response)
             else
               raise VerifyIdNotExistError.new(body: response)
@@ -108,12 +93,36 @@ module M2SYS
 
         private
 
-        def api_request(action, body)
-          url = URI("#{@api_host}/#{action}")
+        def get_authorization_token
+          url = URI("#{@api_host.gsub('Biometrics', 'Authorizations')}/Token")
           http = Net::HTTP.new(url.host, url.port)
+          # http.use_ssl = true
+
           request = Net::HTTP::Post.new(url)
           request['Content-Type'] = ['application/json']
           request['Accept'] = 'application/json'
+          request.body = JSON.generate({
+            clientAPIKey: @client_api_key,
+            clientKey: @client_key
+          })
+
+          response = http.request(request)
+
+          response_body = JSON.parse(response.read_body)
+
+          response_body['ResponseData']['AccessToken'] if response_body['Status'] == 'Success'
+        end
+
+        def api_request(action, body)
+          bearer_token = get_authorization_token
+
+          url = URI("#{@api_host}/#{action}")          
+          http = Net::HTTP.new(url.host, url.port)
+          # http.use_ssl = true
+          request = Net::HTTP::Post.new(url)
+          request['Content-Type'] = ['application/json']
+          request['Accept'] = 'application/json'
+          request['Authorization'] = "Bearer #{bearer_token}"
           request.body = JSON.generate(body)
 
           # puts 'POST', request.body, 'to', url
@@ -124,9 +133,7 @@ module M2SYS
 
           JSON.parse(response.read_body)
         end
-
       end
-
     end
   end
 end
